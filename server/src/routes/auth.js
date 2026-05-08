@@ -1,7 +1,7 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { users, getUserSections } from '../config/users.js';
+import { users, getUserSections, getPasswordHash } from '../config/users.js';
 
 const router = express.Router();
 
@@ -13,12 +13,13 @@ router.post('/login', async (req, res) => {
   }
 
   const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+  const hash = user ? getPasswordHash(user.id) : null;
 
-  if (!user || !user.passwordHash) {
+  if (!user || !hash) {
     return res.status(401).json({ error: 'Invalid credentials' });
   }
 
-  const valid = await bcrypt.compare(password, user.passwordHash);
+  const valid = await bcrypt.compare(password, hash);
   if (!valid) {
     return res.status(401).json({ error: 'Invalid credentials' });
   }

@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { fetchSection } from '../lib/api.js';
 
 const request = async (path, body) => {
   const token = localStorage.getItem('webmin_token');
