@@ -59,8 +59,21 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      <div className="p-3 border-t border-slate-700">
-        <div className="px-3 py-1 text-xs text-slate-500 mb-1 truncate">{user?.email}</div>
+      <div className="p-3 border-t border-slate-700 space-y-0.5">
+        {user?.isAdmin && (
+          <NavLink
+            to="/settings"
+            className={({ isActive }) =>
+              `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
+                isActive ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+              }`
+            }
+          >
+            <span className="w-5 h-5 rounded bg-slate-700 flex items-center justify-center text-xs font-bold">S</span>
+            Settings
+          </NavLink>
+        )}
+        <div className="px-3 py-1 text-xs text-slate-500 truncate">{user?.email}</div>
         <button
           onClick={handleLogout}
           className="w-full text-left px-3 py-2 text-sm text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"

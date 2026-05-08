@@ -24,15 +24,16 @@ router.post('/login', async (req, res) => {
   }
 
   const sections = getUserSections(user);
+  const isAdmin = user.sections.includes('*');
   const token = jwt.sign(
-    { id: user.id, name: user.name, email: user.email, sections },
+    { id: user.id, name: user.name, email: user.email, sections, isAdmin },
     process.env.JWT_SECRET,
     { expiresIn: '8h' }
   );
 
   res.json({
     token,
-    user: { id: user.id, name: user.name, email: user.email, sections },
+    user: { id: user.id, name: user.name, email: user.email, sections, isAdmin },
   });
 });
 

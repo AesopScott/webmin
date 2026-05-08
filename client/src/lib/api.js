@@ -33,3 +33,15 @@ export const saveSection = (section, content, sha) =>
     method: 'PUT',
     body: JSON.stringify({ content, sha }),
   });
+
+export const fetchSettings = () =>
+  request('/settings');
+
+export const saveGithubSettings = (data) =>
+  request('/settings/github', { method: 'POST', body: JSON.stringify(data) });
+
+export const setUserPassword = (userId, password) =>
+  request(`/settings/users/${userId}/password`, {
+    method: 'POST',
+    body: JSON.stringify({ password }),
+  });
