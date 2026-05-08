@@ -1,0 +1,34 @@
+[
+  {
+    "id": 1,
+    "slug": "new-westside-location-opens",
+    "title": "New Westside Health Center Now Open",
+    "url": "",
+    "date": "2024-03-15",
+    "modified": "2024-03-15",
+    "excerpt": "We are excited to announce the opening of our new Westside Health Center, bringing full-service primary care to the westside community.",
+    "content": "<p>After months of preparation, we are thrilled to open the doors of our new Westside Health Center. The clinic offers adult medicine, pediatrics, dental care, and behavioral health services.</p><p>Walk-ins welcome. Call (555) 987-6543 to schedule an appointment.</p>",
+    "thumbnail": null,
+    "meta": {},
+    "terms": {
+      "category": [{ "name": "NEWS" }],
+      "post_tag": []
+    }
+  },
+  {
+    "id": 2,
+    "slug": "free-diabetes-screening",
+    "title": "Free Diabetes Screening Event — April 20",
+    "url": "",
+    "date": "2024-04-01",
+    "modified": "2024-04-01",
+    "excerpt": "Join us for a free community diabetes screening event at Main Street Clinic on April 20th.",
+    "content": "<p>In recognition of National Diabetes Month, we are hosting a free screening event open to all community members. No appointment necessary. Screenings will be conducted from 9am to 2pm.</p>",
+    "thumbnail": null,
+    "meta": {},
+    "terms": {
+      "category": [{ "name": "EVENTS" }],
+      "post_tag": []
+    }
+  }
+]

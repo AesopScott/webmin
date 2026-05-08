@@ -1,0 +1,52 @@
+[
+  {
+    "id": 1,
+    "slug": "main-street-clinic",
+    "title": "Main Street Clinic",
+    "url": "",
+    "date": "2024-01-01",
+    "modified": "2024-01-01",
+    "excerpt": "Our flagship location in the heart of downtown.",
+    "content": "",
+    "thumbnail": null,
+    "meta": {
+      "ignyte_location_phone": "(555) 123-4567",
+      "ignyte_location_address": "123 Main Street",
+      "address2nd": "Anytown, CA 95123",
+      "openhours": "Mon–Fri 8am–5pm",
+      "enableday1": "1", "open1": "8:00 AM", "close1": "5:00 PM",
+      "enableday2": "1", "open2": "8:00 AM", "close2": "5:00 PM",
+      "enableday3": "1", "open3": "8:00 AM", "close3": "5:00 PM",
+      "enableday4": "1", "open4": "8:00 AM", "close4": "5:00 PM",
+      "enableday5": "1", "open5": "8:00 AM", "close5": "5:00 PM",
+      "enableday6": "0",
+      "enableday7": "0"
+    },
+    "terms": []
+  },
+  {
+    "id": 2,
+    "slug": "westside-health-center",
+    "title": "Westside Health Center",
+    "url": "",
+    "date": "2024-01-01",
+    "modified": "2024-01-01",
+    "excerpt": "Serving the westside community with full-service primary care.",
+    "content": "",
+    "thumbnail": null,
+    "meta": {
+      "ignyte_location_phone": "(555) 987-6543",
+      "ignyte_location_address": "456 West Avenue",
+      "address2nd": "Anytown, CA 95124",
+      "openhours": "Mon–Sat 8am–6pm",
+      "enableday1": "1", "open1": "8:00 AM", "close1": "6:00 PM",
+      "enableday2": "1", "open2": "8:00 AM", "close2": "6:00 PM",
+      "enableday3": "1", "open3": "8:00 AM", "close3": "6:00 PM",
+      "enableday4": "1", "open4": "8:00 AM", "close4": "6:00 PM",
+      "enableday5": "1", "open5": "8:00 AM", "close5": "6:00 PM",
+      "enableday6": "1", "open6": "9:00 AM", "close6": "2:00 PM",
+      "enableday7": "0"
+    },
+    "terms": []
+  }
+]

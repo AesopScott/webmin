@@ -1,0 +1,71 @@
+[
+  {
+    "id": 1,
+    "slug": "jane-smith-md",
+    "title": "Jane Smith, MD",
+    "url": "",
+    "date": "2024-01-01",
+    "modified": "2024-01-01",
+    "excerpt": "Dr. Smith is a board-certified family medicine physician with over 10 years of experience serving the community.",
+    "content": "",
+    "thumbnail": null,
+    "meta": {
+      "ignyte-provider-fname": "Jane",
+      "ignyte-provider-lname": "Smith",
+      "ignyte-provider-position": "MD",
+      "ignyte_gender": "2",
+      "ignyte_locations": { "1": "Main Street Clinic" },
+      "ignyte_services": { "1": "Adult Medicine" }
+    },
+    "terms": {
+      "ignyte_specialty": [{ "name": "Family Medicine" }],
+      "ignyte_lang": [{ "name": "English" }, { "name": "Spanish" }]
+    }
+  },
+  {
+    "id": 2,
+    "slug": "carlos-rivera-fnp",
+    "title": "Carlos Rivera, FNP",
+    "url": "",
+    "date": "2024-01-01",
+    "modified": "2024-01-01",
+    "excerpt": "Carlos Rivera is a family nurse practitioner specializing in pediatric and adolescent health.",
+    "content": "",
+    "thumbnail": null,
+    "meta": {
+      "ignyte-provider-fname": "Carlos",
+      "ignyte-provider-lname": "Rivera",
+      "ignyte-provider-position": "FNP",
+      "ignyte_gender": "1",
+      "ignyte_locations": { "1": "Main Street Clinic", "2": "Westside Health Center" },
+      "ignyte_services": { "2": "Pediatrics & Adolescent Health" }
+    },
+    "terms": {
+      "ignyte_specialty": [{ "name": "Pediatrics" }],
+      "ignyte_lang": [{ "name": "English" }, { "name": "Spanish" }, { "name": "Portuguese" }]
+    }
+  },
+  {
+    "id": 3,
+    "slug": "aisha-patel-dds",
+    "title": "Aisha Patel, DDS",
+    "url": "",
+    "date": "2024-01-01",
+    "modified": "2024-01-01",
+    "excerpt": "Dr. Patel provides comprehensive dental care for patients of all ages.",
+    "content": "",
+    "thumbnail": null,
+    "meta": {
+      "ignyte-provider-fname": "Aisha",
+      "ignyte-provider-lname": "Patel",
+      "ignyte-provider-position": "DDS",
+      "ignyte_gender": "2",
+      "ignyte_locations": { "2": "Westside Health Center" },
+      "ignyte_services": { "3": "Dental Care" }
+    },
+    "terms": {
+      "ignyte_specialty": [{ "name": "General Dentistry" }],
+      "ignyte_lang": [{ "name": "English" }, { "name": "Hindi" }]
+    }
+  }
+]

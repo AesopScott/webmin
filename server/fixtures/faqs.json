@@ -1,0 +1,28 @@
+[
+  {
+    "id": 1,
+    "slug": "do-i-need-an-appointment",
+    "title": "Do I need to make an appointment?",
+    "url": "",
+    "date": "2024-01-01",
+    "modified": "2024-01-01",
+    "excerpt": "",
+    "content": "<p>While we welcome walk-ins during clinic hours, scheduling an appointment ensures you are seen promptly. You can call your nearest location or use our online patient portal to book.</p>",
+    "thumbnail": null,
+    "meta": {},
+    "terms": { "ignyte_faq_type": [{ "name": "About Page" }] }
+  },
+  {
+    "id": 2,
+    "slug": "what-is-the-hiring-process",
+    "title": "What's the hiring process like?",
+    "url": "",
+    "date": "2024-01-01",
+    "modified": "2024-01-01",
+    "excerpt": "",
+    "content": "<p>After submitting your application, our HR team reviews it within 5–7 business days. Qualified candidates are contacted for a phone screen, followed by an in-person or video interview with the hiring manager.</p>",
+    "thumbnail": null,
+    "meta": {},
+    "terms": { "ignyte_faq_type": [{ "name": "Career Page" }] }
+  }
+]

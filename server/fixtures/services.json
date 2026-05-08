@@ -1,0 +1,47 @@
+[
+  {
+    "id": 1,
+    "slug": "adult-medicine",
+    "title": "Adult Medicine",
+    "url": "",
+    "date": "2024-01-01",
+    "modified": "2024-01-01",
+    "excerpt": "Comprehensive primary care for adults, including preventive care, chronic disease management, and acute illness treatment.",
+    "content": "<p>Our adult medicine team provides complete primary care services including annual wellness exams, management of chronic conditions such as diabetes and hypertension, immunizations, and same-day sick visits.</p>",
+    "thumbnail": null,
+    "meta": {
+      "ignyte_locations": { "1": "Main Street Clinic", "2": "Westside Health Center" }
+    },
+    "terms": []
+  },
+  {
+    "id": 2,
+    "slug": "pediatrics",
+    "title": "Pediatrics & Adolescent Health",
+    "url": "",
+    "date": "2024-01-01",
+    "modified": "2024-01-01",
+    "excerpt": "Dedicated care for infants, children, and teens from birth through age 18.",
+    "content": "<p>Our pediatric team provides well-child visits, immunizations, developmental screenings, and care for acute and chronic illnesses. We partner with families to support healthy growth at every stage.</p>",
+    "thumbnail": null,
+    "meta": {
+      "ignyte_locations": { "1": "Main Street Clinic" }
+    },
+    "terms": []
+  },
+  {
+    "id": 3,
+    "slug": "dental-care",
+    "title": "Dental Care",
+    "url": "",
+    "date": "2024-01-01",
+    "modified": "2024-01-01",
+    "excerpt": "Affordable dental services for the whole family, including cleanings, fillings, and extractions.",
+    "content": "<p>Our dental team offers preventive, restorative, and emergency dental care. We accept Medi-Cal Dental and offer a sliding fee scale for uninsured patients.</p>",
+    "thumbnail": null,
+    "meta": {
+      "ignyte_locations": { "2": "Westside Health Center" }
+    },
+    "terms": []
+  }
+]
