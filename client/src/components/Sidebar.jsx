@@ -1,7 +1,8 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { getUser, clearAuth } from '../lib/auth.js';
+import { logout } from '../lib/auth.js';
+import { useUser } from '../contexts/UserContext.jsx';
 
-const SECTIONS = [
+const ALL_SECTIONS = [
   { id: 'providers', label: 'Providers', path: '/providers' },
   { id: 'locations', label: 'Locations', path: '/locations' },
   { id: 'services', label: 'Services', path: '/services' },
@@ -10,13 +11,25 @@ const SECTIONS = [
   { id: 'news', label: 'News', path: '/news' },
 ];
 
-export default function Sidebar() {
-  const user = getUser();
-  const navigate = useNavigate();
-  const sections = SECTIONS.filter(s => user?.sections.includes(s.id));
+const navClass = ({ isActive }) =>
+  `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
+    isActive
+      ? 'bg-blue-600 text-white'
+      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+  }`;
 
-  const handleLogout = () => {
-    clearAuth();
+export default function Sidebar() {
+  const { firebaseUser, profile } = useUser();
+  const navigate = useNavigate();
+
+  const userSections = profile?.sections ?? [];
+  const isAdmin = profile?.isAdmin ?? false;
+  const visibleSections = ALL_SECTIONS.filter(
+    (s) => userSections.includes('*') || userSections.includes(s.id)
+  );
+
+  const handleLogout = async () => {
+    await logout();
     navigate('/login');
   };
 
@@ -24,33 +37,17 @@ export default function Sidebar() {
     <aside className="w-60 bg-slate-900 text-white flex flex-col shrink-0">
       <div className="px-6 py-5 border-b border-slate-700">
         <h1 className="text-lg font-bold tracking-tight">Webmin</h1>
-        <p className="text-slate-400 text-xs mt-0.5">CMC Website</p>
+        <p className="text-slate-400 text-xs mt-0.5">{profile?.name ?? ''}</p>
       </div>
 
       <nav className="flex-1 p-3 space-y-0.5">
-        <NavLink
-          to="/"
-          end
-          className={({ isActive }) =>
-            `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
-              isActive ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-            }`
-          }
-        >
+        <NavLink to="/" end className={navClass}>
           <span className="w-5 h-5 rounded bg-slate-700 flex items-center justify-center text-xs font-bold">D</span>
           Dashboard
         </NavLink>
 
-        {sections.map(section => (
-          <NavLink
-            key={section.id}
-            to={section.path}
-            className={({ isActive }) =>
-              `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
-                isActive ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-              }`
-            }
-          >
+        {visibleSections.map((section) => (
+          <NavLink key={section.id} to={section.path} className={navClass}>
             <span className="w-5 h-5 rounded bg-slate-700 flex items-center justify-center text-xs font-bold">
               {section.label[0]}
             </span>
@@ -60,20 +57,15 @@ export default function Sidebar() {
       </nav>
 
       <div className="p-3 border-t border-slate-700 space-y-0.5">
-        {user?.isAdmin && (
-          <NavLink
-            to="/settings"
-            className={({ isActive }) =>
-              `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
-                isActive ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-              }`
-            }
-          >
+        {isAdmin && (
+          <NavLink to="/settings" className={navClass}>
             <span className="w-5 h-5 rounded bg-slate-700 flex items-center justify-center text-xs font-bold">S</span>
             Settings
           </NavLink>
         )}
-        <div className="px-3 py-1 text-xs text-slate-500 truncate">{user?.email}</div>
+        <div className="px-3 py-1 text-xs text-slate-500 truncate">
+          {firebaseUser?.email}
+        </div>
         <button
           onClick={handleLogout}
           className="w-full text-left px-3 py-2 text-sm text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"

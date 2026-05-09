@@ -1,6 +1,16 @@
 import { Navigate, Outlet } from 'react-router-dom';
-import { isAuthenticated } from '../lib/auth.js';
+import { useUser } from '../contexts/UserContext.jsx';
 
 export default function ProtectedRoute() {
-  return isAuthenticated() ? <Outlet /> : <Navigate to="/login" replace />;
+  const { isLoading, isAuthed } = useUser();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-gray-400 text-sm">Loading…</div>
+      </div>
+    );
+  }
+
+  return isAuthed ? <Outlet /> : <Navigate to="/login" replace />;
 }

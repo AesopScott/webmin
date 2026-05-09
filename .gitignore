@@ -1,5 +1,6 @@
 node_modules/
-.env
+client/.env
 client/dist/
-server/dist/
+functions/node_modules/
 *.log
+.firebase/

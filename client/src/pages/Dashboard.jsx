@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { getUser } from '../lib/auth.js';
+import { useUser } from '../contexts/UserContext.jsx';
 
 const SECTION_META = {
   providers: { label: 'Providers', description: 'Add, edit, and remove provider profiles and photos' },
@@ -11,17 +11,20 @@ const SECTION_META = {
 };
 
 export default function Dashboard() {
-  const user = getUser();
+  const { profile } = useUser();
+  const userSections = profile?.sections ?? [];
+  const hasAll = userSections.includes('*');
+  const sections = hasAll ? Object.keys(SECTION_META) : userSections;
 
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Welcome, {user?.name}</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Welcome, {profile?.name}</h1>
         <p className="text-gray-500 text-sm mt-1">Select a section to start editing.</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {user?.sections.map(id => {
+        {sections.map((id) => {
           const meta = SECTION_META[id];
           if (!meta) return null;
           return (

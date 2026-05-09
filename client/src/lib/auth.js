@@ -1,21 +1,24 @@
-const TOKEN_KEY = 'webmin_token';
-const USER_KEY = 'webmin_user';
+import {
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+} from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import { auth, db } from './firebase.js';
 
-export const saveAuth = (token, user) => {
-  localStorage.setItem(TOKEN_KEY, token);
-  localStorage.setItem(USER_KEY, JSON.stringify(user));
+export const login = (email, password) =>
+  signInWithEmailAndPassword(auth, email, password);
+
+export const logout = () => signOut(auth);
+
+export const getCurrentUser = () => auth.currentUser;
+
+export const getIdToken = () =>
+  auth.currentUser ? auth.currentUser.getIdToken() : Promise.resolve(null);
+
+export const onAuthChange = (callback) => onAuthStateChanged(auth, callback);
+
+export const getUserProfile = async (uid) => {
+  const snap = await getDoc(doc(db, 'users', uid));
+  return snap.exists() ? snap.data() : null;
 };
-
-export const getToken = () => localStorage.getItem(TOKEN_KEY);
-
-export const getUser = () => {
-  const raw = localStorage.getItem(USER_KEY);
-  return raw ? JSON.parse(raw) : null;
-};
-
-export const clearAuth = () => {
-  localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(USER_KEY);
-};
-
-export const isAuthenticated = () => !!getToken();

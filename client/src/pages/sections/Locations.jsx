@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { fetchSection, saveSection } from '../../lib/api.js';
+import { useUser } from '../../contexts/UserContext.jsx';
 
 export default function Locations() {
+  const { profile } = useUser();
   const [locations, setLocations] = useState([]);
   const [sha, setSha] = useState(null);
   const [selected, setSelected] = useState(null);
@@ -10,20 +12,21 @@ export default function Locations() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    fetchSection('locations')
-      .then(({ content, sha }) => { setLocations(content); setSha(sha); })
-      .catch(err => setError(err.message))
+    if (!profile?.accountId) return;
+    fetchSection(profile.accountId, 'locations')
+      .then(({ items, sha }) => { setLocations(items); setSha(sha); })
+      .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
-  }, []);
+  }, [profile?.accountId]);
 
   const handleSave = async () => {
     setSaving(true);
-    try { await saveSection('locations', locations, sha); }
+    try { await saveSection(profile.accountId, 'locations', locations, sha); }
     catch (err) { setError(err.message); }
     finally { setSaving(false); }
   };
 
-  if (loading) return <p className="text-gray-400 text-sm">Loading locations...</p>;
+  if (loading) return <p className="text-gray-400 text-sm">Loading locations…</p>;
   if (error) return <p className="text-red-600 text-sm">{error}</p>;
 
   const location = selected !== null ? locations[selected] : null;
@@ -48,7 +51,7 @@ export default function Locations() {
         {location ? (
           <LocationEditor
             location={location}
-            onChange={updated => {
+            onChange={(updated) => {
               const next = [...locations];
               next[selected] = updated;
               setLocations(next);
@@ -74,18 +77,14 @@ function LocationEditor({ location, onChange, onSave, saving }) {
     <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-5">
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-gray-900">{location.title}</h3>
-        <button
-          onClick={onSave}
-          disabled={saving}
-          className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
-        >
-          {saving ? 'Publishing...' : 'Publish'}
+        <button onClick={onSave} disabled={saving}
+          className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors">
+          {saving ? 'Publishing…' : 'Publish'}
         </button>
       </div>
-
-      <Field label="Phone" value={meta['ignyte_location_phone'] || ''} onChange={v => set('ignyte_location_phone', v)} />
-      <Field label="Address" value={meta['ignyte_location_address'] || ''} onChange={v => set('ignyte_location_address', v)} />
-      <Field label="Description" value={location.excerpt || ''} onChange={v => onChange({ ...location, excerpt: v })} multiline />
+      <Field label="Phone" value={meta['ignyte_location_phone'] || ''} onChange={(v) => set('ignyte_location_phone', v)} />
+      <Field label="Address" value={meta['ignyte_location_address'] || ''} onChange={(v) => set('ignyte_location_address', v)} />
+      <Field label="Description" value={location.excerpt || ''} onChange={(v) => onChange({ ...location, excerpt: v })} multiline />
     </div>
   );
 }
@@ -95,10 +94,10 @@ function Field({ label, value, onChange, multiline }) {
     <div>
       <label className="block text-xs font-medium text-gray-500 mb-1">{label}</label>
       {multiline ? (
-        <textarea value={value} onChange={e => onChange(e.target.value)} rows={4}
+        <textarea value={value} onChange={(e) => onChange(e.target.value)} rows={4}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
       ) : (
-        <input type="text" value={value} onChange={e => onChange(e.target.value)}
+        <input type="text" value={value} onChange={(e) => onChange(e.target.value)}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
       )}
     </div>

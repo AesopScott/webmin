@@ -1,14 +1,13 @@
 {
   "name": "webmin",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "scripts": {
     "build": "cd client && npm run build",
-    "start": "cd server && node src/index.js",
-    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
-    "dev:client": "cd client && npm run dev",
-    "dev:server": "cd server && npm run dev",
-    "setup": "npm install && cd client && npm install && cd ../server && npm install"
+    "deploy": "npm run build && firebase deploy",
+    "dev": "cd client && npm run dev",
+    "emulate": "firebase emulators:start",
+    "setup": "npm install && cd client && npm install && cd ../functions && npm install"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
