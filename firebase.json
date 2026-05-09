@@ -12,6 +12,17 @@
     "public": "client/dist",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "rewrites": [
+      { "source": "/api/getSection", "function": { "functionId": "getSection", "region": "us-central1" } },
+      { "source": "/api/saveSection", "function": { "functionId": "saveSection", "region": "us-central1" } },
+      { "source": "/api/getSettings", "function": { "functionId": "getSettings", "region": "us-central1" } },
+      { "source": "/api/saveSettings", "function": { "functionId": "saveSettings", "region": "us-central1" } },
+      { "source": "/api/getAccountUsers", "function": { "functionId": "getAccountUsers", "region": "us-central1" } },
+      { "source": "/api/updateUserSections", "function": { "functionId": "updateUserSections", "region": "us-central1" } },
+      { "source": "/api/createUser", "function": { "functionId": "createUser", "region": "us-central1" } },
+      { "source": "/api/deleteUser", "function": { "functionId": "deleteUser", "region": "us-central1" } },
+      { "source": "/api/setUserAdmin", "function": { "functionId": "setUserAdmin", "region": "us-central1" } },
+      { "source": "/api/getMyProfile", "function": { "functionId": "getMyProfile", "region": "us-central1" } },
+      { "source": "/api/uploadImage", "function": { "functionId": "uploadImage", "region": "us-central1" } },
       { "source": "**", "destination": "/index.html" }
     ]
   },

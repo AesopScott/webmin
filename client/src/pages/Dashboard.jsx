@@ -12,7 +12,7 @@ const SECTION_META = {
 
 export default function Dashboard() {
   const { profile } = useUser();
-  const userSections = profile?.sections ?? [];
+  const userSections = Array.isArray(profile?.sections) ? profile.sections : [];
   const hasAll = userSections.includes('*');
   const sections = hasAll ? Object.keys(SECTION_META) : userSections;
 

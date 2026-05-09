@@ -36,7 +36,7 @@ export default function Sidebar() {
   return (
     <aside className="w-60 bg-slate-900 text-white flex flex-col shrink-0">
       <div className="px-6 py-5 border-b border-slate-700">
-        <h1 className="text-lg font-bold tracking-tight">Webmin</h1>
+        <h1 className="text-lg font-bold tracking-tight">Webmin <span className="text-xs font-normal text-slate-500">v{__APP_VERSION__}</span></h1>
         <p className="text-slate-400 text-xs mt-0.5">{profile?.name ?? ''}</p>
       </div>
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { fetchSection, saveSection } from '../../lib/api.js';
 import { useUser } from '../../contexts/UserContext.jsx';
 
@@ -96,14 +96,38 @@ export default function News() {
     });
   };
 
+  const [listWidth, setListWidth] = useState(432);
+  const dragStart = useRef(null);
+  const dragStartWidth = useRef(null);
+
+  useEffect(() => {
+    const onMouseMove = (e) => {
+      if (dragStart.current === null) return;
+      const delta = e.clientX - dragStart.current;
+      setListWidth(Math.min(Math.max(200, dragStartWidth.current + delta), 700));
+    };
+    const onMouseUp = () => { dragStart.current = null; };
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+  }, []);
+
+  const startDrag = (e) => {
+    dragStart.current = e.clientX;
+    dragStartWidth.current = listWidth;
+  };
+
   if (loading) return <div className="text-gray-400">Loading posts…</div>;
   if (error) return <div className="text-red-500">{error}</div>;
 
   const current = selected !== null ? posts[selected] : null;
 
   return (
-    <div className="flex gap-6 h-full">
-      <div className="w-72 shrink-0 flex flex-col gap-3">
+    <div className="flex h-full">
+      <div style={{ width: listWidth }} className="shrink-0 flex flex-col gap-3 pr-3">
         <div className="flex gap-2">
           <input
             type="search"
@@ -135,9 +159,14 @@ export default function News() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div
+        onMouseDown={startDrag}
+        className="w-1.5 shrink-0 cursor-col-resize rounded bg-gray-200 hover:bg-blue-400 transition-colors mx-1"
+      />
+
+      <div className="flex-1 overflow-y-auto pl-3">
         {current ? (
-          <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-5 max-w-2xl">
+          <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-gray-900 truncate pr-4">{current.title}</h3>
               <div className="flex gap-2 shrink-0">

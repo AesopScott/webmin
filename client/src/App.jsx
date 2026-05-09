@@ -9,6 +9,7 @@ import Locations from './pages/sections/Locations.jsx';
 import Services from './pages/sections/Services.jsx';
 import Careers from './pages/sections/Careers.jsx';
 import Patients from './pages/sections/Patients.jsx';
+import News from './pages/sections/News.jsx';
 import Settings from './pages/Settings.jsx';
 
 export default function App() {
@@ -25,6 +26,7 @@ export default function App() {
               <Route path="/services" element={<Services />} />
               <Route path="/careers" element={<Careers />} />
               <Route path="/patients" element={<Patients />} />
+              <Route path="/news" element={<News />} />
               <Route path="/settings" element={<Settings />} />
             </Route>
           </Route>

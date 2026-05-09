@@ -347,7 +347,7 @@ export default function Login() {
     <div className="min-h-screen bg-slate-900 flex items-center justify-center px-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">Webmin</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Webmin <span className="text-sm font-normal text-gray-400">v{__APP_VERSION__}</span></h1>
           <p className="text-gray-500 text-sm mt-1">Website Management</p>
         </div>
 
