@@ -8,6 +8,7 @@ const PAGE_TITLES = {
   '/careers': 'Careers',
   '/patients': 'Patients',
   '/news': 'News',
+  '/contact': 'Contact',
 };
 
 export default function Header() {

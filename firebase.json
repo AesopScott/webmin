@@ -23,6 +23,16 @@
       { "source": "/api/setUserAdmin", "function": { "functionId": "setUserAdmin", "region": "us-central1" } },
       { "source": "/api/getMyProfile", "function": { "functionId": "getMyProfile", "region": "us-central1" } },
       { "source": "/api/uploadImage", "function": { "functionId": "uploadImage", "region": "us-central1" } },
+      { "source": "/api/resetUserPassword", "function": { "functionId": "resetUserPassword", "region": "us-central1" } },
+      { "source": "/api/sendPasswordEmail", "function": { "functionId": "sendPasswordEmail", "region": "us-central1" } },
+      { "source": "/api/getContactPage", "function": { "functionId": "getContactPage", "region": "us-central1" } },
+      { "source": "/api/saveContactPage", "function": { "functionId": "saveContactPage", "region": "us-central1" } },
+      { "source": "/api/getHtmlFiles", "function": { "functionId": "getHtmlFiles", "region": "us-central1" } },
+      { "source": "/api/getHtmlFile", "function": { "functionId": "getHtmlFile", "region": "us-central1" } },
+      { "source": "/api/saveHtmlFile", "function": { "functionId": "saveHtmlFile", "region": "us-central1" } },
+      { "source": "/api/getChangeHistory", "function": { "functionId": "getChangeHistory", "region": "us-central1" } },
+      { "source": "/api/getChangeDetail", "function": { "functionId": "getChangeDetail", "region": "us-central1" } },
+      { "source": "/api/undoChange", "function": { "functionId": "undoChange", "region": "us-central1" } },
       { "source": "**", "destination": "/index.html" }
     ]
   },

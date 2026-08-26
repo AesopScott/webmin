@@ -3,10 +3,19 @@ import {
   fetchSettings, saveSettings,
   getAccountUsers, updateUserSections,
   createUser, deleteUser, setUserAdmin,
+  resetUserPassword, sendPasswordEmail,
 } from '../lib/api.js';
 import { useUser } from '../contexts/UserContext.jsx';
 
-const ALL_SECTIONS = ['providers', 'locations', 'services', 'careers', 'patients', 'news'];
+const CONTENT_SECTIONS = ['providers', 'locations', 'services', 'careers', 'patients', 'news', 'contact'];
+const FEATURE_SECTIONS = ['activity', 'html-editor'];
+const ALL_SECTIONS = [...CONTENT_SECTIONS, ...FEATURE_SECTIONS];
+
+const SECTION_LABELS = {
+  providers: 'Providers', locations: 'Locations', services: 'Services',
+  careers: 'Careers', patients: 'Patients', news: 'News', contact: 'Contact',
+  activity: 'Activity Log', 'html-editor': 'Page Editor',
+};
 
 export default function Settings() {
   const { profile } = useUser();
@@ -20,6 +29,7 @@ export default function Settings() {
   const [ghToken, setGhToken] = useState('');
   const [ghOwner, setGhOwner] = useState('');
   const [ghRepo, setGhRepo] = useState('');
+  const [ghSiteUrl, setGhSiteUrl] = useState('');
   const [ghSaving, setGhSaving] = useState(false);
   const [ghMsg, setGhMsg] = useState('');
 
@@ -31,6 +41,12 @@ export default function Settings() {
   const [addSaving, setAddSaving] = useState(false);
   const [addError, setAddError] = useState('');
 
+  const [resetModalUser, setResetModalUser] = useState(null);
+  const [resetPassword, setResetPassword] = useState('');
+  const [shouldSendEmail, setShouldSendEmail] = useState(true);
+  const [resetSaving, setResetSaving] = useState(false);
+  const [resetMsg, setResetMsg] = useState('');
+
   useEffect(() => {
     if (!accountId) { setLoading(false); return; }
     Promise.all([fetchSettings(accountId), getAccountUsers(accountId)])
@@ -38,6 +54,7 @@ export default function Settings() {
         setGhConfig(cfg);
         setGhOwner(cfg.githubOwner);
         setGhRepo(cfg.githubRepo);
+        setGhSiteUrl(cfg.siteUrl || '');
         setUsers(us);
       })
       .catch((err) => setError(err.message))
@@ -52,6 +69,7 @@ export default function Settings() {
       await saveSettings(accountId, {
         githubOwner: ghOwner,
         githubRepo: ghRepo,
+        siteUrl: ghSiteUrl,
         ...(ghToken ? { githubToken: ghToken } : {}),
       });
       setGhMsg('Saved.');
@@ -117,6 +135,41 @@ export default function Settings() {
     }
   };
 
+  const handleResetPassword = async (user) => {
+    setResetModalUser(user);
+    setResetPassword('');
+    setShouldSendEmail(true);
+    setResetMsg('');
+  };
+
+  const submitResetPassword = async () => {
+    if (!resetModalUser) return;
+    setResetSaving(true);
+    setResetMsg('');
+    try {
+      const { newPassword } = await resetUserPassword(accountId, resetModalUser.uid);
+      setResetPassword(newPassword);
+
+      if (shouldSendEmail) {
+        const siteUrl = window.location.origin;
+        await sendPasswordEmail(accountId, resetModalUser.uid, newPassword, siteUrl);
+        setResetMsg(`Password reset and email sent to ${resetModalUser.email}`);
+      } else {
+        setResetMsg(`Password reset. Copy above and share with user.`);
+      }
+    } catch (err) {
+      setResetMsg(`Error: ${err.message}`);
+    } finally {
+      setResetSaving(false);
+    }
+  };
+
+  const closeResetModal = () => {
+    setResetModalUser(null);
+    setResetPassword('');
+    setResetMsg('');
+  };
+
   if (!accountId) return <div className="text-gray-400 text-sm">Your account is not linked to any workspace. Add an <code>accountId</code> to your user profile in Firestore.</div>;
   if (loading) return <div className="text-gray-400 text-sm">Loading settings…</div>;
   if (error) return <div className="text-red-500 text-sm">{error}</div>;
@@ -144,6 +197,7 @@ export default function Settings() {
             <Field label="Repository Owner" value={ghOwner} onChange={setGhOwner} placeholder="AesopScott" />
             <Field label="Repository Name" value={ghRepo} onChange={setGhRepo} placeholder="cmc" />
           </div>
+          <Field label="Site URL (used by HTML Page Editor for live preview)" value={ghSiteUrl} onChange={setGhSiteUrl} placeholder="https://dev.cmcenters.org" />
           <div className="flex items-center gap-3">
             <button type="submit" disabled={ghSaving}
               className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors">
@@ -200,15 +254,19 @@ export default function Settings() {
               <tr className="border-b border-gray-200">
                 <th className="text-left pb-3 font-medium text-gray-500 pr-6">User</th>
                 <th className="pb-3 font-medium text-gray-500 px-3 text-center">Admin</th>
-                {ALL_SECTIONS.map((s) => (
-                  <th key={s} className="pb-3 font-medium text-gray-500 capitalize px-2 text-center">{s}</th>
+                {CONTENT_SECTIONS.map((s) => (
+                  <th key={s} className="pb-3 font-medium text-gray-500 px-2 text-center">{SECTION_LABELS[s]}</th>
                 ))}
-                <th className="pb-3" />
+                <th className="pb-3 px-1"><div className="w-px h-4 bg-gray-200 mx-auto" /></th>
+                {FEATURE_SECTIONS.map((s) => (
+                  <th key={s} className="pb-3 font-medium text-blue-500 px-2 text-center whitespace-nowrap">{SECTION_LABELS[s]}</th>
+                ))}
+                <th className="pb-3 font-medium text-gray-500 px-3 text-center">Actions</th>
               </tr>
             </thead>
             <tbody>
               {users.map((user) => {
-                const hasAll = user.sections?.includes('*');
+                const hasAll = user.isAdmin || user.sections?.includes('*');
                 const isSelf = user.uid === profile?.uid;
                 return (
                   <tr key={user.uid} className="border-b border-gray-100 last:border-0">
@@ -226,7 +284,7 @@ export default function Settings() {
                         title={isSelf ? 'Cannot change your own admin status' : ''}
                       />
                     </td>
-                    {ALL_SECTIONS.map((s) => (
+                    {CONTENT_SECTIONS.map((s) => (
                       <td key={s} className="py-3 px-2 text-center">
                         <input
                           type="checkbox"
@@ -237,11 +295,31 @@ export default function Settings() {
                         />
                       </td>
                     ))}
-                    <td className="py-3 pl-4">
+                    <td className="py-3 px-1"><div className="w-px h-4 bg-gray-200 mx-auto" /></td>
+                    {FEATURE_SECTIONS.map((s) => (
+                      <td key={s} className="py-3 px-2 text-center">
+                        <input
+                          type="checkbox"
+                          checked={hasAll || (user.sections?.includes(s) ?? false)}
+                          disabled={hasAll}
+                          onChange={(e) => toggleSection(user.uid, s, e.target.checked)}
+                          className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500"
+                        />
+                      </td>
+                    ))}
+                    <td className="py-3 px-3 text-center text-xs space-y-1">
+                      <button
+                        onClick={() => handleResetPassword(user)}
+                        disabled={isSelf}
+                        className="block text-blue-500 hover:text-blue-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        title={isSelf ? 'Cannot reset your own password' : 'Reset password'}
+                      >
+                        Reset Pwd
+                      </button>
                       <button
                         onClick={() => handleDeleteUser(user.uid, user.name)}
                         disabled={isSelf}
-                        className="text-xs text-red-500 hover:text-red-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        className="text-red-500 hover:text-red-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                         title={isSelf ? 'Cannot delete your own account' : 'Delete user'}
                       >
                         Delete
@@ -254,6 +332,81 @@ export default function Settings() {
           </table>
         </div>
       </section>
+
+      {resetModalUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Reset Password: {resetModalUser.name}
+            </h3>
+
+            {resetPassword && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <p className="text-xs text-blue-600 font-medium mb-2">New Temporary Password:</p>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 bg-white border border-blue-300 px-3 py-2 rounded font-mono text-sm text-gray-800">
+                    {resetPassword}
+                  </code>
+                  <button
+                    onClick={() => navigator.clipboard.writeText(resetPassword)}
+                    className="px-3 py-2 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 transition-colors"
+                  >
+                    Copy
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {!resetPassword && (
+              <>
+                <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer mb-4">
+                  <input
+                    type="checkbox"
+                    checked={shouldSendEmail}
+                    onChange={(e) => setShouldSendEmail(e.target.checked)}
+                    className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500"
+                  />
+                  Send password email to user
+                </label>
+                <p className="text-xs text-gray-500 mb-5">
+                  {shouldSendEmail
+                    ? 'User will receive an email with their temporary password and login link.'
+                    : 'You can copy the password below and share it manually with the user.'}
+                </p>
+              </>
+            )}
+
+            {resetMsg && (
+              <p className={`text-sm px-3 py-2 rounded-lg mb-4 ${
+                resetMsg.includes('Error')
+                  ? 'bg-red-50 text-red-600'
+                  : 'bg-green-50 text-green-600'
+              }`}>
+                {resetMsg}
+              </p>
+            )}
+
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={closeResetModal}
+                disabled={resetSaving}
+                className="px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors"
+              >
+                Close
+              </button>
+              {!resetPassword && (
+                <button
+                  onClick={submitResetPassword}
+                  disabled={resetSaving}
+                  className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                >
+                  {resetSaving ? 'Resetting…' : 'Reset Password'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

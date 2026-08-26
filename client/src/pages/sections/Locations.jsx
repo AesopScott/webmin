@@ -1,6 +1,16 @@
 import { useState, useEffect } from 'react';
 import { fetchSection, saveSection } from '../../lib/api.js';
 import { useUser } from '../../contexts/UserContext.jsx';
+import ChangeHistory from '../../components/ChangeHistory.jsx';
+
+function newLocation() {
+  return {
+    id: Date.now(),
+    title: 'New Location',
+    excerpt: '',
+    meta: { ignyte_location_phone: '', ignyte_location_address: '' },
+  };
+}
 
 export default function Locations() {
   const { profile } = useUser();
@@ -10,6 +20,7 @@ export default function Locations() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [showHistory, setShowHistory] = useState(false);
 
   useEffect(() => {
     if (!profile?.accountId) return;
@@ -21,9 +32,35 @@ export default function Locations() {
 
   const handleSave = async () => {
     setSaving(true);
-    try { await saveSection(profile.accountId, 'locations', locations, sha); }
-    catch (err) { setError(err.message); }
-    finally { setSaving(false); }
+    try {
+      const result = await saveSection(profile.accountId, 'locations', locations, sha);
+      if (result?.sha) setSha(result.sha);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleUndone = ({ sha: newSha, items: newItems }) => {
+    setLocations(newItems);
+    setSha(newSha);
+    setShowHistory(false);
+  };
+
+  const handleAdd = () => {
+    const loc = newLocation();
+    const next = [...locations, loc];
+    setLocations(next);
+    setSelected(next.length - 1);
+  };
+
+  const handleDelete = () => {
+    if (selected === null) return;
+    if (!confirm('Delete this location?')) return;
+    const next = locations.filter((_, i) => i !== selected);
+    setLocations(next);
+    setSelected(null);
   };
 
   if (loading) return <p className="text-gray-400 text-sm">Loading locations…</p>;
@@ -32,19 +69,38 @@ export default function Locations() {
   const location = selected !== null ? locations[selected] : null;
 
   return (
-    <div className="flex gap-6 h-full">
-      <div className="w-72 shrink-0 bg-white border border-gray-200 rounded-xl overflow-y-auto">
-        {locations.map((loc, i) => (
-          <button
-            key={loc.id}
-            onClick={() => setSelected(i)}
-            className={`w-full text-left px-4 py-3 border-b border-gray-100 last:border-0 text-sm transition-colors ${
-              selected === i ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-50 text-gray-800'
-            }`}
-          >
-            {loc.title}
-          </button>
-        ))}
+    <div className="flex flex-col gap-4 h-full">
+      <div className="flex justify-end gap-2">
+        <button
+          onClick={() => setShowHistory(true)}
+          className="px-4 py-2 text-sm font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+        >
+          History
+        </button>
+        <button onClick={handleSave} disabled={saving}
+          className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors">
+          {saving ? 'Publishing…' : 'Publish'}
+        </button>
+      </div>
+    <div className="flex gap-6 flex-1 min-h-0">
+      <div className="w-72 shrink-0 flex flex-col gap-3">
+        <button onClick={handleAdd}
+          className="px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
+          + Add Location
+        </button>
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden flex-1 overflow-y-auto">
+          {locations.map((loc, i) => (
+            <button
+              key={loc.id}
+              onClick={() => setSelected(i)}
+              className={`w-full text-left px-4 py-3 border-b border-gray-100 last:border-0 text-sm transition-colors ${
+                selected === i ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-50 text-gray-800'
+              }`}
+            >
+              {loc.title}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="flex-1">
@@ -56,8 +112,7 @@ export default function Locations() {
               next[selected] = updated;
               setLocations(next);
             }}
-            onSave={handleSave}
-            saving={saving}
+            onDelete={handleDelete}
           />
         ) : (
           <div className="flex items-center justify-center h-64 text-gray-400 text-sm bg-white border border-gray-200 rounded-xl">
@@ -66,10 +121,18 @@ export default function Locations() {
         )}
       </div>
     </div>
+    <ChangeHistory
+      accountId={profile.accountId}
+      section="locations"
+      onUndone={handleUndone}
+      open={showHistory}
+      onClose={() => setShowHistory(false)}
+    />
+    </div>
   );
 }
 
-function LocationEditor({ location, onChange, onSave, saving }) {
+function LocationEditor({ location, onChange, onDelete }) {
   const meta = location.meta || {};
   const set = (field, value) => onChange({ ...location, meta: { ...meta, [field]: value } });
 
@@ -77,11 +140,12 @@ function LocationEditor({ location, onChange, onSave, saving }) {
     <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-5">
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-gray-900">{location.title}</h3>
-        <button onClick={onSave} disabled={saving}
-          className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors">
-          {saving ? 'Publishing…' : 'Publish'}
+        <button onClick={onDelete}
+          className="px-4 py-2 text-red-600 text-sm font-medium rounded-lg border border-red-200 hover:bg-red-50 transition-colors">
+          Delete
         </button>
       </div>
+      <Field label="Title" value={location.title || ''} onChange={(v) => onChange({ ...location, title: v })} />
       <Field label="Phone" value={meta['ignyte_location_phone'] || ''} onChange={(v) => set('ignyte_location_phone', v)} />
       <Field label="Address" value={meta['ignyte_location_address'] || ''} onChange={(v) => set('ignyte_location_address', v)} />
       <Field label="Description" value={location.excerpt || ''} onChange={(v) => onChange({ ...location, excerpt: v })} multiline />

@@ -10,7 +10,10 @@ import Services from './pages/sections/Services.jsx';
 import Careers from './pages/sections/Careers.jsx';
 import Patients from './pages/sections/Patients.jsx';
 import News from './pages/sections/News.jsx';
+import Contact from './pages/sections/Contact.jsx';
 import Settings from './pages/Settings.jsx';
+import ActivityLog from './pages/ActivityLog.jsx';
+import HtmlEditor from './pages/HtmlEditor.jsx';
 
 export default function App() {
   return (
@@ -27,7 +30,10 @@ export default function App() {
               <Route path="/careers" element={<Careers />} />
               <Route path="/patients" element={<Patients />} />
               <Route path="/news" element={<News />} />
+              <Route path="/contact" element={<Contact />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/activity" element={<ActivityLog />} />
+              <Route path="/html-editor" element={<HtmlEditor />} />
             </Route>
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
