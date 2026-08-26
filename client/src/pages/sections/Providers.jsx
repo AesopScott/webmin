@@ -1,6 +1,22 @@
 import { useState, useEffect } from 'react';
 import { fetchSection, saveSection } from '../../lib/api.js';
 import { useUser } from '../../contexts/UserContext.jsx';
+import ImageUpload from '../../components/ImageUpload.jsx';
+import ChangeHistory from '../../components/ChangeHistory.jsx';
+
+function newProvider() {
+  return {
+    id: `provider-${Date.now()}`,
+    title: '',
+    excerpt: '',
+    meta: {
+      'ignyte-provider-fname': '',
+      'ignyte-provider-lname': '',
+      'ignyte-provider-position': '',
+      'thumbnail': '',
+    },
+  };
+}
 
 export default function Providers() {
   const { profile } = useUser();
@@ -11,6 +27,7 @@ export default function Providers() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
+  const [showHistory, setShowHistory] = useState(false);
 
   useEffect(() => {
     if (!profile?.accountId) return;
@@ -26,13 +43,45 @@ export default function Providers() {
 
   const handleSave = async () => {
     setSaving(true);
+    setError('');
     try {
-      await saveSection(profile.accountId, 'providers', providers, sha);
+      const { sha: newSha } = await saveSection(profile.accountId, 'providers', providers, sha);
+      if (newSha) setSha(newSha);
     } catch (err) {
       setError(err.message);
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleAdd = () => {
+    const p = newProvider();
+    const next = [...providers, p];
+    setProviders(next);
+    setSelected(next.length - 1);
+    setSearch('');
+  };
+
+  const handleUndone = ({ sha: newSha, items: newItems }) => {
+    setProviders(newItems);
+    setSha(newSha);
+    setShowHistory(false);
+  };
+
+  const handleDelete = () => {
+    if (selected === null) return;
+    const next = providers.filter((_, i) => i !== selected);
+    setProviders(next);
+    setSelected(null);
+  };
+
+  const handleChange = (updated) => {
+    const fname = updated.meta?.['ignyte-provider-fname'] || '';
+    const lname = updated.meta?.['ignyte-provider-lname'] || '';
+    const title = [fname, lname].filter(Boolean).join(' ') || 'New Provider';
+    const next = [...providers];
+    next[selected] = { ...updated, title };
+    setProviders(next);
   };
 
   if (loading) return <p className="text-gray-400 text-sm">Loading providers…</p>;
@@ -41,15 +90,39 @@ export default function Providers() {
   const provider = selected !== null ? providers[selected] : null;
 
   return (
-    <div className="flex gap-6 h-full">
+    <div className="flex flex-col gap-4 h-full">
+      <div className="flex justify-end gap-2">
+        <button
+          onClick={() => setShowHistory(true)}
+          className="px-4 py-2 text-sm font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+        >
+          History
+        </button>
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+        >
+          {saving ? 'Publishing…' : 'Publish'}
+        </button>
+      </div>
+    <div className="flex gap-6 flex-1 min-h-0">
       <div className="w-72 shrink-0 flex flex-col gap-3">
-        <input
-          type="search"
-          placeholder="Search providers…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+        <div className="flex gap-2">
+          <input
+            type="search"
+            placeholder="Search providers…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <button
+            onClick={handleAdd}
+            className="px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            + Add
+          </button>
+        </div>
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden flex-1 overflow-y-auto">
           {filtered.map((p) => {
             const idx = providers.indexOf(p);
@@ -61,7 +134,7 @@ export default function Providers() {
                   selected === idx ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-50 text-gray-800'
                 }`}
               >
-                <div className="font-medium">{p.title}</div>
+                <div className="font-medium">{p.title || 'New Provider'}</div>
                 <div className="text-xs text-gray-400 mt-0.5">{p.meta?.['ignyte-provider-position'] || ''}</div>
               </button>
             );
@@ -73,13 +146,9 @@ export default function Providers() {
         {provider ? (
           <ProviderEditor
             provider={provider}
-            onChange={(updated) => {
-              const next = [...providers];
-              next[selected] = updated;
-              setProviders(next);
-            }}
-            onSave={handleSave}
-            saving={saving}
+            onChange={handleChange}
+            onDelete={handleDelete}
+            accountId={profile.accountId}
           />
         ) : (
           <div className="flex items-center justify-center h-64 text-gray-400 text-sm bg-white border border-gray-200 rounded-xl">
@@ -88,23 +157,30 @@ export default function Providers() {
         )}
       </div>
     </div>
+    <ChangeHistory
+      accountId={profile.accountId}
+      section="providers"
+      onUndone={handleUndone}
+      open={showHistory}
+      onClose={() => setShowHistory(false)}
+    />
+    </div>
   );
 }
 
-function ProviderEditor({ provider, onChange, onSave, saving }) {
+function ProviderEditor({ provider, onChange, onDelete, accountId }) {
   const meta = provider.meta || {};
   const set = (field, value) => onChange({ ...provider, meta: { ...meta, [field]: value } });
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-5">
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-gray-900">{provider.title}</h3>
+        <h3 className="font-semibold text-gray-900">{provider.title || 'New Provider'}</h3>
         <button
-          onClick={onSave}
-          disabled={saving}
-          className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+          onClick={onDelete}
+          className="px-4 py-2 text-red-600 text-sm font-medium rounded-lg border border-red-200 hover:bg-red-50 transition-colors"
         >
-          {saving ? 'Publishing…' : 'Publish'}
+          Delete
         </button>
       </div>
 
@@ -113,12 +189,20 @@ function ProviderEditor({ provider, onChange, onSave, saving }) {
         <Field label="Last Name" value={meta['ignyte-provider-lname'] || ''} onChange={(v) => set('ignyte-provider-lname', v)} />
       </div>
       <Field label="Credentials / Position" value={meta['ignyte-provider-position'] || ''} onChange={(v) => set('ignyte-provider-position', v)} />
+      <div>
+        <label className="block text-xs font-medium text-gray-500 mb-2">Photo</label>
+        <ImageUpload
+          accountId={accountId}
+          currentPath={meta['thumbnail'] || ''}
+          onUploaded={(path) => set('thumbnail', path)}
+        />
+      </div>
       <Field label="Excerpt / Bio" value={provider.excerpt || ''} onChange={(v) => onChange({ ...provider, excerpt: v })} multiline />
     </div>
   );
 }
 
-function Field({ label, value, onChange, multiline }) {
+function Field({ label, value, onChange, multiline, placeholder }) {
   return (
     <div>
       <label className="block text-xs font-medium text-gray-500 mb-1">{label}</label>
@@ -134,6 +218,7 @@ function Field({ label, value, onChange, multiline }) {
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       )}

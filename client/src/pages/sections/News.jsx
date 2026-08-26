@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { fetchSection, saveSection } from '../../lib/api.js';
 import { useUser } from '../../contexts/UserContext.jsx';
+import ChangeHistory from '../../components/ChangeHistory.jsx';
 
 function slugify(str) {
   return str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -32,6 +33,7 @@ export default function News() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
+  const [showHistory, setShowHistory] = useState(false);
 
   useEffect(() => {
     if (!profile?.accountId) return;
@@ -64,6 +66,12 @@ export default function News() {
     setPosts(next);
     setSelected(0);
     setSearch('');
+  };
+
+  const handleUndone = ({ sha: newSha, items: newItems }) => {
+    setPosts(newItems);
+    setSha(newSha);
+    setShowHistory(false);
   };
 
   const handleDelete = () => {
@@ -174,6 +182,12 @@ export default function News() {
                   className="px-4 py-2 text-red-600 text-sm font-medium rounded-lg border border-red-200 hover:bg-red-50 transition-colors">
                   Delete
                 </button>
+                <button
+                  onClick={() => setShowHistory(true)}
+                  className="px-4 py-2 text-sm font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  History
+                </button>
                 <button onClick={handleSave} disabled={saving}
                   className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors">
                   {saving ? 'Publishing…' : 'Publish'}
@@ -199,6 +213,13 @@ export default function News() {
           </div>
         )}
       </div>
+    <ChangeHistory
+      accountId={profile.accountId}
+      section="posts"
+      onUndone={handleUndone}
+      open={showHistory}
+      onClose={() => setShowHistory(false)}
+    />
     </div>
   );
 }

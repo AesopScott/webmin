@@ -29,6 +29,12 @@ export const fetchSection = (accountId, section) =>
 export const saveSection = (accountId, section, items, sha) =>
   call('saveSection', { accountId, section, items, sha });
 
+export const fetchContactPage = (accountId) =>
+  call('getContactPage', { accountId });
+
+export const saveContactPage = (accountId, items, sha) =>
+  call('saveContactPage', { accountId, items, sha });
+
 export const fetchSettings = (accountId) =>
   call('getSettings', { accountId });
 
@@ -55,3 +61,27 @@ export const deleteUser = (accountId, targetUid) =>
 
 export const setUserAdmin = (accountId, targetUid, isAdmin) =>
   call('setUserAdmin', { accountId, targetUid, isAdmin });
+
+export const resetUserPassword = (accountId, targetUid) =>
+  call('resetUserPassword', { accountId, targetUid });
+
+export const sendPasswordEmail = (accountId, targetUid, newPassword, siteUrl) =>
+  call('sendPasswordEmail', { accountId, targetUid, newPassword, siteUrl });
+
+export const getHtmlFiles = (accountId) =>
+  call('getHtmlFiles', { accountId });
+
+export const getHtmlFile = (accountId, path) =>
+  call('getHtmlFile', { accountId, path });
+
+export const saveHtmlFile = (accountId, path, content, sha) =>
+  call('saveHtmlFile', { accountId, path, content, sha });
+
+export const getChangeHistory = (accountId, section, limit) =>
+  call('getChangeHistory', { accountId, section, limit });
+
+export const getChangeDetail = (accountId, changeId) =>
+  call('getChangeDetail', { accountId, changeId });
+
+export const undoChange = (accountId, changeId) =>
+  call('undoChange', { accountId, changeId });

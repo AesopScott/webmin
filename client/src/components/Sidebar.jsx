@@ -9,6 +9,7 @@ const ALL_SECTIONS = [
   { id: 'careers', label: 'Careers', path: '/careers' },
   { id: 'patients', label: 'Patients', path: '/patients' },
   { id: 'news', label: 'News', path: '/news' },
+  { id: 'contact', label: 'Contact', path: '/contact' },
 ];
 
 const navClass = ({ isActive }) =>
@@ -25,7 +26,7 @@ export default function Sidebar() {
   const userSections = profile?.sections ?? [];
   const isAdmin = profile?.isAdmin ?? false;
   const visibleSections = ALL_SECTIONS.filter(
-    (s) => userSections.includes('*') || userSections.includes(s.id)
+    (s) => isAdmin || userSections.includes('*') || userSections.includes(s.id)
   );
 
   const handleLogout = async () => {
@@ -57,6 +58,18 @@ export default function Sidebar() {
       </nav>
 
       <div className="p-3 border-t border-slate-700 space-y-0.5">
+        {(isAdmin || userSections.includes('*') || userSections.includes('activity')) && (
+          <NavLink to="/activity" className={navClass}>
+            <span className="w-5 h-5 rounded bg-slate-700 flex items-center justify-center text-xs font-bold">A</span>
+            Activity Log
+          </NavLink>
+        )}
+        {(isAdmin || userSections.includes('*') || userSections.includes('html-editor')) && (
+          <NavLink to="/html-editor" className={navClass}>
+            <span className="w-5 h-5 rounded bg-slate-700 flex items-center justify-center text-xs font-bold">E</span>
+            Page Editor
+          </NavLink>
+        )}
         {isAdmin && (
           <NavLink to="/settings" className={navClass}>
             <span className="w-5 h-5 rounded bg-slate-700 flex items-center justify-center text-xs font-bold">S</span>

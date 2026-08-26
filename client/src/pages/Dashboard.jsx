@@ -8,6 +8,7 @@ const SECTION_META = {
   careers: { label: 'Careers', description: 'Update FAQs and benefits copy' },
   patients: { label: 'Patients', description: 'Edit patient resource and insurance content' },
   news: { label: 'News', description: 'Add and manage news posts and announcements' },
+  contact: { label: 'Contact', description: 'Update contact cards, phone numbers, and email links' },
 };
 
 export default function Dashboard() {
