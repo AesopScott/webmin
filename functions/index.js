@@ -14,6 +14,8 @@ function generateRandomPassword() {
 
 const ALL_SECTIONS = ['providers', 'locations', 'services', 'careers', 'patients', 'news', 'contact'];
 const CONTACT_PAGE_PATH = 'src/pages/contact.astro';
+const GENERATED_FILE_PREFIXES = ['dist/', 'public_html/', 'client/dist/', '.astro/'];
+const EDITABLE_ASTRO_PREFIXES = ['src/pages/', 'src/layouts/'];
 
 const SECTION_DEFAULTS = {
   providers: [],
@@ -130,6 +132,44 @@ function sanitizeHref(value) {
   if (!href) return '';
   if (/^(tel:|mailto:|https?:\/\/|\/|#)/i.test(href)) return href;
   return '';
+}
+
+function normalizeRepoPath(path) {
+  return String(path || '').replace(/\\/g, '/').replace(/^\/+/, '');
+}
+
+function isGeneratedPath(path) {
+  const normalized = normalizeRepoPath(path);
+  return GENERATED_FILE_PREFIXES.some((prefix) => {
+    const dir = prefix.replace(/\/$/, '');
+    return normalized === dir || normalized.startsWith(prefix);
+  });
+}
+
+function isSafeRepoPath(path) {
+  return normalizeRepoPath(path)
+    .split('/')
+    .every((part) => part && part !== '.' && part !== '..');
+}
+
+function isEditableAstroPath(path) {
+  const normalized = normalizeRepoPath(path);
+  return isSafeRepoPath(normalized)
+    && normalized.endsWith('.astro')
+    && EDITABLE_ASTRO_PREFIXES.some((prefix) => normalized.startsWith(prefix));
+}
+
+function isEditableStaticHtmlPath(path) {
+  const normalized = normalizeRepoPath(path);
+  return isSafeRepoPath(normalized) && normalized.endsWith('.html') && !isGeneratedPath(normalized);
+}
+
+function isEditablePagePath(path) {
+  return isEditableAstroPath(path) || isEditableStaticHtmlPath(path);
+}
+
+function getPageFileType(path) {
+  return normalizeRepoPath(path).endsWith('.astro') ? 'astro' : 'html';
 }
 
 function buildContactPage(data) {
@@ -530,7 +570,7 @@ exports.getHtmlFiles = route(async (req) => {
     commit_sha: ref.object.sha,
   });
 
-  // Recursively list all files and filter for .html
+  // Recursively list editable source pages.
   const { data: tree } = await octokit.git.getTree({
     owner: account.githubOwner,
     repo: account.githubRepo,
@@ -539,8 +579,8 @@ exports.getHtmlFiles = route(async (req) => {
   });
 
   const files = tree.tree
-    .filter((item) => item.type === 'blob' && item.path.endsWith('.html'))
-    .map((item) => ({ path: item.path, size: item.size }))
+    .filter((item) => item.type === 'blob' && isEditablePagePath(item.path))
+    .map((item) => ({ path: item.path, size: item.size, type: getPageFileType(item.path) }))
     .sort((a, b) => a.path.localeCompare(b.path));
 
   return { files };
@@ -549,8 +589,9 @@ exports.getHtmlFiles = route(async (req) => {
 exports.getHtmlFile = route(async (req) => {
   const { uid } = await verifyAuth(req);
   const { accountId, path } = req.body;
+  const normalizedPath = normalizeRepoPath(path);
 
-  if (!path || !path.endsWith('.html')) throw { code: 400, message: 'Invalid file path' };
+  if (!isEditablePagePath(normalizedPath)) throw { code: 400, message: 'Invalid editable page path' };
 
   const user = await getUserDoc(uid);
   if (!user.isAdmin || user.accountId !== accountId) throw { code: 403, message: 'Admins only' };
@@ -561,18 +602,19 @@ exports.getHtmlFile = route(async (req) => {
   const { data } = await octokit.repos.getContent({
     owner: account.githubOwner,
     repo: account.githubRepo,
-    path,
+    path: normalizedPath,
   });
 
   const content = Buffer.from(data.content, 'base64').toString('utf8');
-  return { content, sha: data.sha, path };
+  return { content, sha: data.sha, path: normalizedPath, type: getPageFileType(normalizedPath) };
 });
 
 exports.saveHtmlFile = route(async (req) => {
   const { uid } = await verifyAuth(req);
   const { accountId, path, content, sha } = req.body;
+  const normalizedPath = normalizeRepoPath(path);
 
-  if (!path || !path.endsWith('.html')) throw { code: 400, message: 'Invalid file path' };
+  if (!isEditablePagePath(normalizedPath)) throw { code: 400, message: 'Invalid editable page path' };
 
   const user = await getUserDoc(uid);
   if (!user.isAdmin || user.accountId !== accountId) throw { code: 403, message: 'Admins only' };
@@ -583,8 +625,8 @@ exports.saveHtmlFile = route(async (req) => {
   const { data } = await octokit.repos.createOrUpdateFileContents({
     owner: account.githubOwner,
     repo: account.githubRepo,
-    path,
-    message: `webmin: update ${path}`,
+    path: normalizedPath,
+    message: `webmin: update ${normalizedPath}`,
     content: Buffer.from(content, 'utf8').toString('base64'),
     sha,
   });
