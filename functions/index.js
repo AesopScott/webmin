@@ -134,6 +134,81 @@ function sanitizeHref(value) {
   return '';
 }
 
+function slugify(value) {
+  return String(value ?? '')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+function uniqueSlug(value, usedSlugs, fallback) {
+  const root = slugify(value) || fallback;
+  let slug = root;
+  let suffix = 2;
+  while (usedSlugs.has(slug)) {
+    slug = `${root}-${suffix}`;
+    suffix += 1;
+  }
+  usedSlugs.add(slug);
+  return slug;
+}
+
+function normalizeProvider(item, index, usedSlugs) {
+  const provider = { ...(item || {}) };
+  const meta = { ...(provider.meta || {}) };
+  const firstName = meta['ignyte-provider-fname'] || '';
+  const lastName = meta['ignyte-provider-lname'] || '';
+  const title = provider.title || [firstName, lastName].filter(Boolean).join(' ') || `Provider ${index + 1}`;
+
+  provider.title = title;
+  provider.slug = uniqueSlug(provider.slug || title, usedSlugs, `provider-${index + 1}`);
+  provider.url = provider.url || `https://cmcenters.org/health-care-provider/${provider.slug}/`;
+
+  if (!provider.thumbnail && meta.thumbnail) provider.thumbnail = meta.thumbnail;
+  delete meta.thumbnail;
+  provider.meta = meta;
+
+  return provider;
+}
+
+function normalizeSectionItems(section, items) {
+  if (!Array.isArray(items)) return items;
+  if (section !== 'providers') return items;
+
+  const usedSlugs = new Set();
+  return items.map((item, index) => normalizeProvider(item, index, usedSlugs));
+}
+
+function validateSectionItems(section, items) {
+  if (!Array.isArray(items)) return;
+  const routedSections = new Set(['providers', 'locations', 'services', 'posts']);
+  if (!routedSections.has(section)) return;
+
+  const missing = [];
+  const duplicates = [];
+  const seen = new Set();
+  items.forEach((item, index) => {
+    const label = item?.title || item?.name || item?.id || `item ${index + 1}`;
+    const slug = String(item?.slug || '').trim();
+    if (!slug) {
+      missing.push(label);
+      return;
+    }
+    if (seen.has(slug)) duplicates.push(slug);
+    seen.add(slug);
+  });
+
+  if (missing.length) {
+    throw { code: 400, message: `Missing slug for ${section}: ${missing.slice(0, 5).join(', ')}` };
+  }
+  if (duplicates.length) {
+    throw { code: 400, message: `Duplicate slug for ${section}: ${duplicates.slice(0, 5).join(', ')}` };
+  }
+}
+
 function normalizeRepoPath(path) {
   return String(path || '').replace(/\\/g, '/').replace(/^\/+/, '');
 }
@@ -325,6 +400,8 @@ exports.saveSection = route(async (req) => {
   const user = await getUserDoc(uid);
   if (user.accountId !== accountId) throw { code: 403, message: 'Wrong account' };
   if (!canAccess(user.sections, section)) throw { code: 403, message: 'Access denied' };
+  const normalizedItems = normalizeSectionItems(section, items);
+  validateSectionItems(section, normalizedItems);
 
   const account = await getAccountDoc(accountId);
   const octokit = new Octokit({ auth: account.githubToken });
@@ -348,7 +425,7 @@ exports.saveSection = route(async (req) => {
     repo: account.githubRepo,
     path: `src/data/${section}.json`,
     message: `webmin: update ${section}`,
-    content: Buffer.from(JSON.stringify(items, null, 2)).toString('base64'),
+    content: Buffer.from(JSON.stringify(normalizedItems, null, 2)).toString('base64'),
     sha,
   });
 
@@ -361,15 +438,15 @@ exports.saveSection = route(async (req) => {
       userName: user.name || '',
       userEmail: user.email || '',
       beforeItems,
-      afterItems: items,
-      affectedCount: computeAffectedCount(beforeItems, items),
+      afterItems: normalizedItems,
+      affectedCount: computeAffectedCount(beforeItems, normalizedItems),
       isUndo: false,
     });
   } catch (logErr) {
     console.error('Change log write error:', logErr.message);
   }
 
-  return { ok: true, sha: data.content.sha };
+  return { ok: true, sha: data.content.sha, items: normalizedItems };
 });
 
 // ── Settings read (admin) ─────────────────────────────────────────────────────

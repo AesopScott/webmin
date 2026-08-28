@@ -4,16 +4,28 @@ import { useUser } from '../../contexts/UserContext.jsx';
 import ImageUpload from '../../components/ImageUpload.jsx';
 import ChangeHistory from '../../components/ChangeHistory.jsx';
 
+function slugify(value) {
+  return String(value ?? '')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
 function newProvider() {
   return {
     id: `provider-${Date.now()}`,
     title: '',
+    slug: '',
+    url: '',
     excerpt: '',
+    thumbnail: '',
     meta: {
       'ignyte-provider-fname': '',
       'ignyte-provider-lname': '',
       'ignyte-provider-position': '',
-      'thumbnail': '',
     },
   };
 }
@@ -45,8 +57,9 @@ export default function Providers() {
     setSaving(true);
     setError('');
     try {
-      const { sha: newSha } = await saveSection(profile.accountId, 'providers', providers, sha);
+      const { sha: newSha, items: savedItems } = await saveSection(profile.accountId, 'providers', providers, sha);
       if (newSha) setSha(newSha);
+      if (savedItems) setProviders(savedItems);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -80,7 +93,13 @@ export default function Providers() {
     const lname = updated.meta?.['ignyte-provider-lname'] || '';
     const title = [fname, lname].filter(Boolean).join(' ') || 'New Provider';
     const next = [...providers];
-    next[selected] = { ...updated, title };
+    const slug = updated.slug || slugify(title);
+    next[selected] = {
+      ...updated,
+      title,
+      slug,
+      url: updated.url || (slug ? `https://cmcenters.org/health-care-provider/${slug}/` : ''),
+    };
     setProviders(next);
   };
 
@@ -171,6 +190,7 @@ export default function Providers() {
 function ProviderEditor({ provider, onChange, onDelete, accountId }) {
   const meta = provider.meta || {};
   const set = (field, value) => onChange({ ...provider, meta: { ...meta, [field]: value } });
+  const setProvider = (field, value) => onChange({ ...provider, [field]: value });
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-5">
@@ -189,12 +209,13 @@ function ProviderEditor({ provider, onChange, onDelete, accountId }) {
         <Field label="Last Name" value={meta['ignyte-provider-lname'] || ''} onChange={(v) => set('ignyte-provider-lname', v)} />
       </div>
       <Field label="Credentials / Position" value={meta['ignyte-provider-position'] || ''} onChange={(v) => set('ignyte-provider-position', v)} />
+      <Field label="Slug" value={provider.slug || ''} onChange={(v) => setProvider('slug', slugify(v))} />
       <div>
         <label className="block text-xs font-medium text-gray-500 mb-2">Photo</label>
         <ImageUpload
           accountId={accountId}
-          currentPath={meta['thumbnail'] || ''}
-          onUploaded={(path) => set('thumbnail', path)}
+          currentPath={provider.thumbnail || meta.thumbnail || ''}
+          onUploaded={(path) => setProvider('thumbnail', path)}
         />
       </div>
       <Field label="Excerpt / Bio" value={provider.excerpt || ''} onChange={(v) => onChange({ ...provider, excerpt: v })} multiline />
