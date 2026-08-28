@@ -194,10 +194,10 @@ export default function Settings() {
             placeholder={ghConfig?.tokenSet ? '••••••••' : 'ghp_…'}
           />
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Repository Owner" value={ghOwner} onChange={setGhOwner} placeholder="AesopScott" />
+            <Field label="Repository Owner" value={ghOwner} onChange={setGhOwner} placeholder="CommunityMedicalCenters" />
             <Field label="Repository Name" value={ghRepo} onChange={setGhRepo} placeholder="cmc" />
           </div>
-          <Field label="Site URL (used by HTML Page Editor for live preview)" value={ghSiteUrl} onChange={setGhSiteUrl} placeholder="https://dev.cmcenters.org" />
+          <Field label="Site URL (used by Page Editor for live preview)" value={ghSiteUrl} onChange={setGhSiteUrl} placeholder="https://dev.cmcenters.org" />
           <div className="flex items-center gap-3">
             <button type="submit" disabled={ghSaving}
               className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors">
