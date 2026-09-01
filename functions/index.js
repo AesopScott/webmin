@@ -234,13 +234,8 @@ function isEditableAstroPath(path) {
     && EDITABLE_ASTRO_PREFIXES.some((prefix) => normalized.startsWith(prefix));
 }
 
-function isEditableStaticHtmlPath(path) {
-  const normalized = normalizeRepoPath(path);
-  return isSafeRepoPath(normalized) && normalized.endsWith('.html') && !isGeneratedPath(normalized);
-}
-
 function isEditablePagePath(path) {
-  return isEditableAstroPath(path) || isEditableStaticHtmlPath(path);
+  return isEditableAstroPath(path);
 }
 
 function getPageFileType(path) {
