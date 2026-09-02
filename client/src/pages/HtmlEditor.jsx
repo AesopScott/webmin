@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useUser } from '../contexts/UserContext.jsx';
 import { getHtmlFiles, getHtmlFile, saveHtmlFile, fetchSettings } from '../lib/api.js';
 
-// ── File tree helpers ─────────────────────────────────────────────────────────
+// -- File tree helpers ---------------------------------------------------------
 
 function buildTree(files) {
   const root = {};
@@ -52,11 +52,8 @@ function FileTree({ node, depth = 0, selectedPath, onSelect, search }) {
               : 'text-gray-700 hover:bg-gray-100'
           }`}
         >
-          <span className="mr-1 opacity-50">⬜</span>
+          <span className="mr-1 opacity-50">F</span>
           {file.path.split('/').pop()}
-          <span className="ml-1 opacity-50 uppercase">
-            {file.type || (isAstroPath(file.path) ? 'astro' : 'html')}
-          </span>
         </button>
       ))}
     </>
@@ -77,7 +74,7 @@ function FolderNode({ name, node, depth, selectedPath, onSelect, search }) {
         style={{ paddingLeft: indent + 4 }}
         className="w-full text-left py-1.5 pr-3 text-xs font-medium text-gray-500 hover:text-gray-800 flex items-center gap-1"
       >
-        <span>{open ? '▾' : '▸'}</span>
+        <span>{open ? 'v' : '>'}</span>
         {name}/
       </button>
       {open && (
@@ -93,25 +90,115 @@ function FolderNode({ name, node, depth, selectedPath, onSelect, search }) {
   );
 }
 
-// ── Inject base tag into HTML string ─────────────────────────────────────────
+// -- Visual Astro editing helpers ---------------------------------------------
 
-function injectBase(html, siteUrl) {
-  const base = `<base href="${siteUrl.replace(/\/$/, '')}/">`;
-  if (/<head[^>]*>/i.test(html)) {
-    return html.replace(/(<head[^>]*>)/i, `$1\n  ${base}`);
-  }
-  return `${base}\n${html}`;
+function normalizeLineEndings(value) {
+  return String(value || '').replace(/\r\n/g, '\n');
 }
 
-function stripBase(html) {
-  return html.replace(/\n?\s*<base href="[^"]*"[^>]*>/gi, '');
+function splitFrontmatter(source) {
+  const normalized = normalizeLineEndings(source);
+  const match = normalized.match(/^---\n[\s\S]*?\n---\n?/);
+  if (!match) return { frontmatter: '', body: normalized };
+  return {
+    frontmatter: match[0],
+    body: normalized.slice(match[0].length),
+  };
+}
+
+function extractStyleTags(source) {
+  const styles = [];
+  const withoutStyles = source.replace(/\n*<style\b[\s\S]*?<\/style>\s*/gi, (match) => {
+    styles.push(match.trim());
+    return '\n';
+  });
+  return { withoutStyles, styles: styles.join('\n') };
+}
+
+function hasAstroTemplateSyntax(fragment) {
+  return /{[\s\S]*?}|<slot\b|<\/?[A-Z][A-Za-z0-9_.:-]*\b|set:[A-Za-z-]+=/.test(fragment);
+}
+
+function stripAstroForPreview(fragment) {
+  return fragment
+    .replace(/{[\s\S]*?}/g, '')
+    .replace(/<\/?[A-Z][A-Za-z0-9_.:-]*\b[^>]*>/g, '')
+    .replace(/<slot\b[^>]*\/?>/g, '')
+    .trim();
+}
+
+function createAstroDocument(source) {
+  const { frontmatter, body } = splitFrontmatter(source);
+  const openMatch = body.match(/<Base\b[^>]*>/i);
+  const closeIndex = body.lastIndexOf('</Base>');
+
+  if (openMatch && closeIndex > openMatch.index) {
+    const editableStart = openMatch.index + openMatch[0].length;
+    const before = frontmatter + body.slice(0, editableStart);
+    const inner = body.slice(editableStart, closeIndex);
+    const after = body.slice(closeIndex);
+    const { withoutStyles, styles } = extractStyleTags(inner);
+    const afterStyles = extractStyleTags(after).styles;
+    const fragment = withoutStyles.trim();
+    const canEdit = !hasAstroTemplateSyntax(fragment);
+
+    return {
+      type: 'astro',
+      canEdit,
+      fragment: canEdit ? fragment : stripAstroForPreview(fragment),
+      before,
+      after,
+      styles: [styles, afterStyles].filter(Boolean).join('\n'),
+    };
+  }
+
+  const { withoutStyles, styles } = extractStyleTags(body);
+
+  return {
+    type: 'astro',
+    canEdit: false,
+    fragment: stripAstroForPreview(withoutStyles),
+    before: source,
+    after: '',
+    styles,
+  };
+}
+
+function buildPreviewDocument(fragment, styles, siteUrl, canEdit) {
+  const base = siteUrl ? `<base href="${siteUrl.replace(/\/$/, '')}/">` : '';
+  const readonlyStyle = canEdit ? '' : 'body{background:#f8fafc;color:#334155;}';
+  const notice = canEdit
+    ? ''
+    : '<div class="webmin-readonly-note">This page is driven by templates or data. Use its section editor for content changes.</div>';
+
+  return `<!doctype html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  ${base}
+  <style>
+    body{font-family:Arial,sans-serif;margin:0;padding:28px;color:#111827;background:#fff;line-height:1.55;}
+    a{color:#2563eb;text-decoration:underline;}
+    img{max-width:100%;height:auto;}
+    .webmin-readonly-note{border:1px solid #cbd5e1;background:#fff;border-radius:8px;padding:12px 14px;margin-bottom:18px;font-size:14px;}
+    ${readonlyStyle}
+  </style>
+  ${styles || ''}
+</head>
+<body>${notice}${fragment || ''}</body>
+</html>`;
+}
+
+function serializeAstroDocument(doc, editedFragment) {
+  const fragment = editedFragment.trim();
+  return `${doc.before}\n\n${fragment}\n\n${doc.after.replace(/^\n+/, '')}`;
 }
 
 function isAstroPath(path) {
   return String(path || '').toLowerCase().endsWith('.astro');
 }
 
-// ── Main page ─────────────────────────────────────────────────────────────────
+// -- Main page ----------------------------------------------------------------
 
 export default function HtmlEditor() {
   const { profile } = useUser();
@@ -122,8 +209,7 @@ export default function HtmlEditor() {
   const [siteUrl, setSiteUrl] = useState('');
 
   const [selectedPath, setSelectedPath] = useState(null);
-  const [originalHtml, setOriginalHtml] = useState('');
-  const [sourceText, setSourceText] = useState('');
+  const [editorDoc, setEditorDoc] = useState(null);
   const [sha, setSha] = useState(null);
   const [loadingFile, setLoadingFile] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -152,17 +238,18 @@ export default function HtmlEditor() {
     if (!iframe) return;
     try {
       const doc = iframe.contentDocument;
-      doc.body.contentEditable = 'true';
+      doc.body.contentEditable = editorDoc?.canEdit ? 'true' : 'false';
       doc.body.spellcheck = true;
-      // Prevent link clicks from navigating away
       doc.addEventListener('click', (e) => {
         const a = e.target.closest('a');
         if (a) e.preventDefault();
       });
-      doc.addEventListener('input', () => setDirty(true));
+      if (editorDoc?.canEdit) {
+        doc.addEventListener('input', () => setDirty(true));
+      }
       setIframeReady(true);
     } catch (_) {}
-  }, []);
+  }, [editorDoc?.canEdit]);
 
   const loadFile = useCallback(async (path) => {
     if (!profile?.accountId) return;
@@ -172,10 +259,14 @@ export default function HtmlEditor() {
     setIframeReady(false);
     try {
       const { content, sha: fileSha, path: returnedPath } = await getHtmlFile(profile.accountId, path);
-      setOriginalHtml(content);
-      setSourceText(content);
+      const resolvedPath = returnedPath || path;
+      const doc = isAstroPath(resolvedPath)
+        ? createAstroDocument(content)
+        : { type: 'html', canEdit: true, fragment: content, before: '', after: '', styles: '' };
+
+      setEditorDoc(doc);
       setSha(fileSha);
-      setSelectedPath(returnedPath || path);
+      setSelectedPath(resolvedPath);
     } catch (err) {
       setFileError(err.message);
     } finally {
@@ -189,21 +280,20 @@ export default function HtmlEditor() {
   };
 
   const handleSave = async () => {
-    if (!selectedPath || !sha) return;
+    if (!iframeRef.current || !selectedPath || !sha || !editorDoc?.canEdit) return;
     setSaving(true);
     setSaveStatus('');
     try {
-      let cleaned = sourceText;
-      if (!isAstroPath(selectedPath)) {
-        if (!iframeRef.current) return;
-        const doc = iframeRef.current.contentDocument;
-        const raw = doc.documentElement.outerHTML;
-        cleaned = stripBase(raw);
-      }
+      const doc = iframeRef.current.contentDocument;
+      const editedFragment = doc.body.innerHTML;
+      const cleaned = editorDoc.type === 'astro'
+        ? serializeAstroDocument(editorDoc, editedFragment)
+        : editedFragment;
       const { sha: newSha } = await saveHtmlFile(profile.accountId, selectedPath, cleaned, sha);
       setSha(newSha);
-      setOriginalHtml(cleaned);
-      setSourceText(cleaned);
+      setEditorDoc(isAstroPath(selectedPath)
+        ? createAstroDocument(cleaned)
+        : { type: 'html', canEdit: true, fragment: cleaned, before: '', after: '', styles: '' });
       setDirty(false);
       setSaveStatus('Saved!');
       setTimeout(() => setSaveStatus(''), 3000);
@@ -222,16 +312,13 @@ export default function HtmlEditor() {
     );
   }
 
-  const selectedIsAstro = isAstroPath(selectedPath);
-  const srcdoc = originalHtml && !selectedIsAstro
-    ? (siteUrl ? injectBase(originalHtml, siteUrl) : originalHtml)
+  const srcdoc = editorDoc
+    ? buildPreviewDocument(editorDoc.fragment, editorDoc.styles, siteUrl, editorDoc.canEdit)
     : '';
-
   const tree = buildTree(files);
 
   return (
     <div className="flex flex-col h-full -m-8">
-      {/* Header bar */}
       <div className="flex items-center justify-between px-6 py-3 border-b border-gray-200 bg-white shrink-0">
         <div>
           <h1 className="text-sm font-semibold text-gray-900">Page Editor</h1>
@@ -240,7 +327,7 @@ export default function HtmlEditor() {
           )}
         </div>
         <div className="flex items-center gap-3">
-          {!siteUrl && selectedPath && !selectedIsAstro && (
+          {!siteUrl && selectedPath && (
             <span className="text-xs text-amber-500">Set Site URL in Settings for full preview</span>
           )}
           {saveStatus && (
@@ -253,29 +340,27 @@ export default function HtmlEditor() {
           )}
           <button
             onClick={handleSave}
-            disabled={saving || !selectedPath || !dirty || (!selectedIsAstro && !iframeReady)}
+            disabled={saving || !selectedPath || !dirty || !iframeReady || !editorDoc?.canEdit}
             className="px-4 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-40 transition-colors"
           >
-            {saving ? 'Saving…' : 'Save to GitHub'}
+            {saving ? 'Saving...' : 'Save to GitHub'}
           </button>
         </div>
       </div>
 
-      {/* Body */}
       <div className="flex flex-1 min-h-0">
-        {/* File browser */}
         <div className="w-64 shrink-0 border-r border-gray-200 bg-gray-50 flex flex-col">
           <div className="p-2 border-b border-gray-200">
             <input
               type="search"
-              placeholder="Filter files…"
+              placeholder="Filter files..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
           </div>
           <div className="flex-1 overflow-y-auto p-2">
-            {loadingFiles && <p className="text-xs text-gray-400 px-2 py-2">Loading files…</p>}
+            {loadingFiles && <p className="text-xs text-gray-400 px-2 py-2">Loading files...</p>}
             {fileError && <p className="text-xs text-red-500 px-2 py-2">{fileError}</p>}
             {!loadingFiles && files.length === 0 && (
               <p className="text-xs text-gray-400 px-2 py-2">No editable page files found.</p>
@@ -289,26 +374,15 @@ export default function HtmlEditor() {
           </div>
         </div>
 
-        {/* Editor */}
         <div className="flex-1 flex flex-col min-w-0 bg-white overflow-hidden">
           {loadingFile ? (
             <div className="flex items-center justify-center h-48 text-gray-400 text-sm">
-              Loading…
+              Loading...
             </div>
           ) : !selectedPath ? (
             <div className="flex items-center justify-center h-full text-gray-400 text-sm">
               Select a page file from the left to begin editing
             </div>
-          ) : selectedIsAstro ? (
-            <textarea
-              value={sourceText}
-              onChange={(e) => {
-                setSourceText(e.target.value);
-                setDirty(true);
-              }}
-              spellCheck={false}
-              className="flex-1 w-full resize-none border-0 p-5 font-mono text-sm leading-6 text-gray-900 outline-none"
-            />
           ) : (
             <iframe
               ref={iframeRef}
