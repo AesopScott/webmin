@@ -37,7 +37,7 @@ export default function News() {
 
   useEffect(() => {
     if (!profile?.accountId) return;
-    fetchSection(profile.accountId, 'posts')
+    fetchSection(profile.accountId, 'news')
       .then(({ items, sha }) => { setPosts(items); setSha(sha); })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
@@ -51,7 +51,7 @@ export default function News() {
     setSaving(true);
     setError('');
     try {
-      const result = await saveSection(profile.accountId, 'posts', posts, sha);
+      const result = await saveSection(profile.accountId, 'news', posts, sha);
       if (result?.sha) setSha(result.sha);
     } catch (err) {
       setError(err.message);
@@ -215,7 +215,7 @@ export default function News() {
       </div>
     <ChangeHistory
       accountId={profile.accountId}
-      section="posts"
+      section="news"
       onUndone={handleUndone}
       open={showHistory}
       onClose={() => setShowHistory(false)}
