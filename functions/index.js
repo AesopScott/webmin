@@ -23,13 +23,21 @@ const SECTION_DEFAULTS = {
   services: [],
   careers: { benefits: [], faqs: [] },
   patients: { insurance: [], forms: [], rights: [], responsibilities: [] },
-  posts: [],
+  news: [],
 };
+
+function normalizeSection(section) {
+  return section === 'posts' ? 'news' : section;
+}
+
+function sectionDataPath(section) {
+  return `src/data/${section === 'news' ? 'posts' : section}.json`;
+}
 
 function canAccess(userSections, section) {
   if (!Array.isArray(userSections)) return false;
   if (userSections.includes('*')) return true;
-  return userSections.includes(section);
+  return userSections.includes(normalizeSection(section));
 }
 
 function computeAffectedCount(before, after) {
@@ -361,7 +369,8 @@ function route(fn) {
 // ── Section read ──────────────────────────────────────────────────────────────
 exports.getSection = route(async (req) => {
   const { uid } = await verifyAuth(req);
-  const { accountId, section } = req.body;
+  const { accountId, section: requestedSection } = req.body;
+  const section = normalizeSection(requestedSection);
 
   const user = await getUserDoc(uid);
   if (user.accountId !== accountId) throw { code: 403, message: 'Wrong account' };
@@ -374,7 +383,7 @@ exports.getSection = route(async (req) => {
     const { data } = await octokit.repos.getContent({
       owner: account.githubOwner,
       repo: account.githubRepo,
-      path: `src/data/${section}.json`,
+      path: sectionDataPath(section),
     });
     const text = Buffer.from(data.content, 'base64').toString('utf8').replace(/^﻿/, '');
     return {
@@ -390,7 +399,8 @@ exports.getSection = route(async (req) => {
 // ── Section write ─────────────────────────────────────────────────────────────
 exports.saveSection = route(async (req) => {
   const { uid } = await verifyAuth(req);
-  const { accountId, section, items, sha } = req.body;
+  const { accountId, section: requestedSection, items, sha } = req.body;
+  const section = normalizeSection(requestedSection);
 
   const user = await getUserDoc(uid);
   if (user.accountId !== accountId) throw { code: 403, message: 'Wrong account' };
@@ -408,7 +418,7 @@ exports.saveSection = route(async (req) => {
       const { data: current } = await octokit.repos.getContent({
         owner: account.githubOwner,
         repo: account.githubRepo,
-        path: `src/data/${section}.json`,
+        path: sectionDataPath(section),
       });
       const text = Buffer.from(current.content, 'base64').toString('utf8').replace(/^﻿/, '');
       beforeItems = JSON.parse(text);
@@ -418,7 +428,7 @@ exports.saveSection = route(async (req) => {
   const { data } = await octokit.repos.createOrUpdateFileContents({
     owner: account.githubOwner,
     repo: account.githubRepo,
-    path: `src/data/${section}.json`,
+    path: sectionDataPath(section),
     message: `webmin: update ${section}`,
     content: Buffer.from(JSON.stringify(normalizedItems, null, 2)).toString('base64'),
     sha,
@@ -851,7 +861,7 @@ exports.undoChange = route(async (req) => {
   const changeData = snap.data();
   if (!user.isAdmin && changeData.userId !== uid) throw { code: 403, message: 'Access denied' };
 
-  const { section } = changeData;
+  const section = normalizeSection(changeData.section);
   if (!user.isAdmin && !canAccess(user.sections, section)) throw { code: 403, message: 'Access denied' };
 
   const account = await getAccountDoc(accountId);
@@ -906,7 +916,7 @@ exports.undoChange = route(async (req) => {
     const { data: current } = await octokit.repos.getContent({
       owner: account.githubOwner,
       repo: account.githubRepo,
-      path: `src/data/${section}.json`,
+      path: sectionDataPath(section),
     });
     currentSha = current.sha;
   } catch (err) {
@@ -917,7 +927,7 @@ exports.undoChange = route(async (req) => {
   const { data } = await octokit.repos.createOrUpdateFileContents({
     owner: account.githubOwner,
     repo: account.githubRepo,
-    path: `src/data/${section}.json`,
+    path: sectionDataPath(section),
     message: `webmin: undo change to ${section}`,
     content: Buffer.from(JSON.stringify(revertTo, null, 2)).toString('base64'),
     sha: currentSha,
