@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { fetchSection, saveSection } from '../../lib/api.js';
 import { useUser } from '../../contexts/UserContext.jsx';
 import ChangeHistory from '../../components/ChangeHistory.jsx';
+import ImageUpload from '../../components/ImageUpload.jsx';
 
 function slugify(str) {
   return str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -197,6 +198,11 @@ export default function News() {
             <Field label="Title" value={current.title || ''} onChange={(v) => update('title', v)} />
             <Field label="Slug" value={current.slug || ''} onChange={(v) => update('slug', v)} />
             <Field label="Date" value={current.date || ''} onChange={(v) => update('date', v)} placeholder="2024-04-17 19:11:08" />
+            <ImageUpload
+              accountId={profile.accountId}
+              currentPath={current.thumbnail || ''}
+              onUploaded={(path) => update('thumbnail', path)}
+            />
             <Field label="Thumbnail path" value={current.thumbnail || ''} onChange={(v) => update('thumbnail', v)} placeholder="/img/filename.jpg" />
             <Field
               label="Categories (comma-separated)"
